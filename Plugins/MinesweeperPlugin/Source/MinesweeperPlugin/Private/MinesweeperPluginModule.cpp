@@ -1,13 +1,13 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "MinesweeperPlugin.h"
+#include "MinesweeperPluginModule.h"
 #include "MinesweeperPluginStyle.h"
 #include "MinesweeperPluginCommands.h"
 #include "LevelEditor.h"
+#include "SMinesweeperGameManager.h"
 #include "Widgets/Docking/SDockTab.h"
-#include "Widgets/Layout/SBox.h"
-#include "Widgets/Text/STextBlock.h"
 #include "ToolMenus.h"
+#include "Widgets/Input/SNumericEntryBox.h"
 
 static const FName MinesweeperPluginTabName("MinesweeperPlugin");
 
@@ -16,12 +16,12 @@ static const FName MinesweeperPluginTabName("MinesweeperPlugin");
 void FMinesweeperPluginModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
-	
+
 	FMinesweeperPluginStyle::Initialize();
 	FMinesweeperPluginStyle::ReloadTextures();
 
 	FMinesweeperPluginCommands::Register();
-	
+
 	PluginCommands = MakeShareable(new FUICommandList);
 
 	PluginCommands->MapAction(
@@ -30,7 +30,7 @@ void FMinesweeperPluginModule::StartupModule()
 		FCanExecuteAction());
 
 	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FMinesweeperPluginModule::RegisterMenus));
-	
+
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(MinesweeperPluginTabName, FOnSpawnTab::CreateRaw(this, &FMinesweeperPluginModule::OnSpawnPluginTab))
 		.SetDisplayName(LOCTEXT("FMinesweeperPluginTabTitle", "MinesweeperPlugin"))
 		.SetMenuType(ETabSpawnerMenuType::Hidden);
@@ -54,23 +54,10 @@ void FMinesweeperPluginModule::ShutdownModule()
 
 TSharedRef<SDockTab> FMinesweeperPluginModule::OnSpawnPluginTab(const FSpawnTabArgs& SpawnTabArgs)
 {
-	FText WidgetText = FText::Format(
-		LOCTEXT("WindowWidgetText", "Add code to {0} in {1} to override this window's contents"),
-		FText::FromString(TEXT("FMinesweeperPluginModule::OnSpawnPluginTab")),
-		FText::FromString(TEXT("MinesweeperPlugin.cpp"))
-		);
-
 	return SNew(SDockTab)
-		.TabRole(ETabRole::NomadTab)
+		.TabRole(NomadTab)
 		[
-			// Put your tab content here!
-			SNew(SBox)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-			[
-				SNew(STextBlock)
-				.Text(WidgetText)
-			]
+			SNew(SMinesweeperGameManager)
 		];
 }
 
@@ -105,5 +92,5 @@ void FMinesweeperPluginModule::RegisterMenus()
 }
 
 #undef LOCTEXT_NAMESPACE
-	
+
 IMPLEMENT_MODULE(FMinesweeperPluginModule, MinesweeperPlugin)
