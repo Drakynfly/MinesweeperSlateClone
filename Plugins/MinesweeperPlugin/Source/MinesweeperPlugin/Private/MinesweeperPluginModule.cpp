@@ -1,10 +1,10 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright Guy (Drakynfly) Lundvall. All Rights Reserved.
 
 #include "MinesweeperPluginModule.h"
 #include "MinesweeperPluginStyle.h"
 #include "MinesweeperPluginCommands.h"
 #include "LevelEditor.h"
-#include "SMinesweeperGameManager.h"
+#include "Widgets/SMinesweeperGameManager.h"
 #include "Widgets/Docking/SDockTab.h"
 #include "ToolMenus.h"
 #include "Widgets/Input/SNumericEntryBox.h"

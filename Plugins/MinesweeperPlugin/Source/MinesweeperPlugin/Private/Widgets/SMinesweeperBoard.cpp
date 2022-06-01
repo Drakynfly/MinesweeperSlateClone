@@ -1,5 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// Copyright Guy (Drakynfly) Lundvall. All Rights Reserved.
 
 #include "SMinesweeperBoard.h"
 #include "SlateOptMacros.h"
@@ -9,6 +8,7 @@ BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
 
 void SMinesweeperBoard::Construct(const FArguments& InArgs)
 {
+	OnGameStarted = InArgs._OnGameStarted;
 	OnGameFinished = InArgs._OnGameFinished;
 
 	BoardGridWidget = SNew(SGridPanel);
@@ -28,6 +28,7 @@ void SMinesweeperBoard::GenerateNewBoard(const FMinesweeperGameConfig Config)
 	BottomEdge.Empty();
 	LeftEdge.Empty();
 	RightEdge.Empty();
+	HasGameStarted = false;
 
 	// Step 1: Initialize our board with the new number of cells, all in their default state.
 	GridWidth = Config.GridWidth;
@@ -55,7 +56,7 @@ void SMinesweeperBoard::GenerateNewBoard(const FMinesweeperGameConfig Config)
 
 	while (NumMinesMade < NumMinesToMake)
 	{
-		// Grab a random cell and check if its not a bomb.
+		// Grab a random cell and check if its not a mine.
 		FMinesweeperCellState& PossiblePromotion = BoardState[FMath::RandRange(0, BoardState.Num()-1)];
 
 		if (!PossiblePromotion.IsMine)
@@ -66,7 +67,7 @@ void SMinesweeperBoard::GenerateNewBoard(const FMinesweeperGameConfig Config)
 		}
 	}
 
-	// Step 4: Tell every cell how many mines they are next too
+	// Step 3: Tell every cell how many mines they are next too
 	for (int32 i = 0; i < BoardState.Num(); ++i)
 	{
 		FMinesweeperCellState& BoardCell = BoardState[i];
@@ -87,7 +88,7 @@ void SMinesweeperBoard::GenerateNewBoard(const FMinesweeperGameConfig Config)
 	// Set the number of cells that must be revealed to win.
 	CellsLeftToReveal = NewBoardCellCount - NumMinesMade;
 
-	// Step 5: GenerateBoard
+	// Step 4: Generate board widgets
 	BoardGridWidget->ClearChildren();
 
 	for (int32 ColumnIndex = 0; ColumnIndex < GridWidth; ColumnIndex++)
@@ -124,6 +125,9 @@ void SMinesweeperBoard::IndexToWidthAndHeight(const int32 Index, uint8& OutWidth
 
 TArray<int32> SMinesweeperBoard::GetCellNeighbors(const int32 FromIndex) const
 {
+	// This entire function is certainly not the best way to do this, but it's the most straight-forward and readable
+	// way. I could probably make a "more efficient" version if i tried, but it would certainly be nigh unreadable.
+
 	const bool IsTopEdge = TopEdge.Contains(FromIndex);
 	const bool IsBottomEdge = BottomEdge.Contains(FromIndex);
 	const bool IsRightEdge = RightEdge.Contains(FromIndex);
@@ -176,7 +180,7 @@ TArray<int32> SMinesweeperBoard::GetCellNeighbors(const int32 FromIndex) const
 	return OutNeighbors;
 }
 
-void SMinesweeperBoard::HandleCellClicked(const TSharedPtr<SMinesweeperCell> Cell)
+void SMinesweeperBoard::HandleCellClicked(const TSharedPtr<SMinesweeperCell> Cell, const bool IsRightMouse)
 {
 	const int32 CellIndex = Cell->GetCellIndex();
 
@@ -185,18 +189,34 @@ void SMinesweeperBoard::HandleCellClicked(const TSharedPtr<SMinesweeperCell> Cel
 		return;
 	}
 
-	const FMinesweeperCellState& ClickedCellState = BoardState[CellIndex];
-
-	// If the cell was a mine, end the game
-	if (ClickedCellState.IsMine)
+	if (!HasGameStarted)
 	{
-		EndGame(false);
+		HasGameStarted = true;
+		// ReSharper disable once CppExpressionWithoutSideEffects
+		OnGameStarted.ExecuteIfBound();
 	}
-	// Otherwise, calculate new cell states.
+
+	FMinesweeperCellState& ClickedCellState = BoardState[CellIndex];
+
+	if (IsRightMouse)
+	{
+		// Mark cell as flagged, or un-flag, if currently flagged.
+		ClickedCellState.FlaggedAsMine = !ClickedCellState.FlaggedAsMine;
+	}
 	else
 	{
-		RecurseRevealCells(CellIndex);
+		// If the cell was a mine, end the game
+		if (ClickedCellState.IsMine)
+		{
+			EndGame(false);
+		}
+		// Otherwise, calculate new cell states.
+		else
+		{
+			RecurseRevealCells(CellIndex);
+		}
 	}
+
 
 	Cell->SetState(ClickedCellState);
 }
@@ -226,6 +246,7 @@ void SMinesweeperBoard::RecurseRevealCells(const int32 FromIndex)
 			}
 		}
 
+		// Reveal all unrevealed neighbors of cells with 0 nearby mines.
 		if (CellState.NumberOfNearbyMines == 0)
 		{
 			TArray<int32> NewCells = GetCellNeighbors(ThisCell);

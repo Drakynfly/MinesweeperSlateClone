@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright Guy (Drakynfly) Lundvall. All Rights Reserved.
 
 #pragma once
 
@@ -7,11 +7,11 @@
 #include "MinesweeperProjectGameModeBase.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class MINESWEEPERPROJECT_API AMinesweeperProjectGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
-	
+
 };
