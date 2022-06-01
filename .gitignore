@@ -14,5 +14,4 @@
 *.lib
 *.patch_*
 *.pdb
-*.target
 *.user
